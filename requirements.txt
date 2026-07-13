@@ -8,4 +8,3 @@ cloudinary==1.40.0
 reportlab==4.2.5
 setuptools<70.0.0
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
