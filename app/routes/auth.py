@@ -30,15 +30,24 @@ router = APIRouter()
 
 
 def hash_password(plain: str) -> str:
-    if len(plain) > 72:
+    try:
+        plain_bytes = plain.encode("utf-8")
+        if len(plain_bytes) > 72:
+            plain = plain_bytes[:72].decode("utf-8", "ignore")
+    except Exception:
         plain = plain[:72]
     return pwd_context.hash(plain)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    if len(plain) > 72:
-        plain = plain[:72]
-    return pwd_context.verify(plain, hashed)
+    try:
+        plain_bytes = plain.encode("utf-8")
+        if len(plain_bytes) > 72:
+            plain = plain_bytes[:72].decode("utf-8", "ignore")
+        return pwd_context.verify(plain, hashed)
+    except Exception as e:
+        logger.error(f"Password verification crash: {e}")
+        return False
 
 
 def create_access_token(data: dict) -> str:
