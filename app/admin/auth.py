@@ -36,9 +36,13 @@ class AdminChangePasswordRequest(BaseModel):
     new_password: str = Field(..., min_length=6)
 
 def verify_password(plain: str, hashed: str) -> bool:
+    if len(plain) > 72:
+        plain = plain[:72]
     return pwd_context.verify(plain, hashed)
 
 def hash_password(plain: str) -> str:
+    if len(plain) > 72:
+        plain = plain[:72]
     return pwd_context.hash(plain)
 
 def create_access_token(data: dict) -> str:
