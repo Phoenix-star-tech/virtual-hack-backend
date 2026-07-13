@@ -34,8 +34,19 @@ async def list_submissions(
     subs = supabase.from_("submissions").select("*").range(start, start + per_page - 1).order("created_at", desc=True).execute()
 
     for s in subs.data or []:
-        task = supabase.from_("tasks").select("title").eq("id", s["task_id"]).single().execute()
+        task = supabase.from_("tasks").select("title, module_id, answer_type, quiz_options").eq("id", s["task_id"]).single().execute()
         s["task_title"] = task.data["title"] if task.data else ""
+        s["module_id"] = task.data["module_id"] if task.data else ""
+        s["answer_type"] = task.data["answer_type"] if task.data else "link"
+        s["quiz_options"] = task.data["quiz_options"] if task.data else []
+        if task.data and task.data.get("module_id"):
+            mod = supabase.from_("modules").select("name").eq("id", task.data["module_id"]).single().execute()
+            s["module_name"] = mod.data["name"] if mod.data else ""
+        else:
+            s["module_name"] = ""
+        submitter = supabase.from_("profiles").select("full_name, email").eq("id", s["submitter_id"]).single().execute()
+        s["submitter_name"] = submitter.data["full_name"] if submitter.data else ""
+        s["submitter_email"] = submitter.data["email"] if submitter.data else ""
         if s.get("team_id"):
             team = supabase.from_("teams").select("name").eq("id", s["team_id"]).single().execute()
             s["team_name"] = team.data["name"] if team.data else ""

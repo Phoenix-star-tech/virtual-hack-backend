@@ -22,8 +22,19 @@ async def list_announcements(admin: dict = Depends(get_current_admin)):
 async def create_announcement(data: AnnouncementCreate, admin: dict = Depends(get_current_admin)):
     if not supabase:
         raise HTTPException(status_code=503, detail="Supabase not configured")
-    payload = data.model_dump()
-    payload["created_by"] = admin["sub"]
+
+    from datetime import datetime, timezone
+
+    payload = {
+        "title": data.title,
+        "body": data.body,
+        "type": data.type,
+        "priority": data.priority,
+        "target_module": data.target_module,
+        "sent_as_email": data.send_email,
+        "created_by": admin["sub"],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
 
     resp = supabase.from_("announcements").insert(payload).execute()
     log_action(admin["sub"], "create_announcement", "announcement", resp.data[0]["id"] if resp.data else None, payload)

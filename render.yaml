@@ -11,7 +11,9 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: RAZORPAY_KEY_ID
+      - key: CLOUDINARY_CLOUD_NAME
         sync: false
-      - key: RAZORPAY_KEY_SECRET
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
         sync: false

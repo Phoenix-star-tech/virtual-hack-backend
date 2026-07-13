@@ -1,9 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from datetime import datetime, timezone
 from app.admin.auth import get_current_admin, require_role
 from app.admin.schemas.task_schemas import TaskCreate, TaskUpdate
 from app.admin.services.audit import log_action
 from app.services.supabase_service import supabase_admin as supabase
+from app.services.cloudinary_service import upload_image, is_available
+import logging
+
+logger = logging.getLogger("admin_tasks")
 
 router = APIRouter()
 
@@ -56,6 +60,18 @@ async def delete_task(task_id: str, admin: dict = Depends(require_role("super_ad
     log_action(admin["sub"], "delete_task", "task", task_id)
     return {"message": "Task deleted"}
 
+@router.put("/{task_id}/toggle-active")
+async def toggle_task_active(task_id: str, admin: dict = Depends(require_role("super_admin"))):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
+    resp = supabase.from_("tasks").select("is_active").eq("id", task_id).single().execute()
+    if not resp.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+    new_active = not resp.data.get("is_active", True)
+    supabase.from_("tasks").update({"is_active": new_active, "updated_at": datetime.now(timezone.utc).isoformat()}).eq("id", task_id).execute()
+    log_action(admin["sub"], "toggle_task_active", "task", task_id, {"is_active": new_active})
+    return {"is_active": new_active}
+
 @router.put("/{task_id}/reorder")
 async def reorder_tasks(task_id: str, order_index: int, admin: dict = Depends(require_role("super_admin"))):
     if not supabase:
@@ -63,3 +79,26 @@ async def reorder_tasks(task_id: str, order_index: int, admin: dict = Depends(re
     supabase.from_("tasks").update({"order_index": order_index, "updated_at": datetime.now(timezone.utc).isoformat()}).eq("id", task_id).execute()
     log_action(admin["sub"], "reorder_task", "task", task_id, {"order_index": order_index})
     return {"message": "Task reordered"}
+
+
+@router.post("/upload-image")
+async def upload_task_image(
+    file: UploadFile = File(...),
+    admin: dict = Depends(require_role("super_admin")),
+):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase not configured")
+    if not is_available():
+        raise HTTPException(status_code=503, detail="Cloudinary is not configured")
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    try:
+        contents = await file.read()
+        result = upload_image(contents, folder="virtual_hack_2k26/tasks")
+        image_url = result.get("secure_url")
+        public_id = result.get("public_id")
+    except Exception as e:
+        logger.error("Cloudinary upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to upload image to Cloudinary")
+    log_action(admin["sub"], "upload_task_image", "task", None, {"image_url": image_url})
+    return {"url": image_url, "public_id": public_id}

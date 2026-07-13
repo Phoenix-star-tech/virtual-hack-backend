@@ -1,0 +1,3 @@
+ALTER TABLE public.announcements
+ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'info',
+ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'normal';
