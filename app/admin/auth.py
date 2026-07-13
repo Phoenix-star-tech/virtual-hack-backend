@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
@@ -15,7 +15,6 @@ SECRET_KEY = os.getenv("JWT_SECRET", os.getenv("SUPABASE_ANON_KEY", "fallback-se
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 router = APIRouter()
 
@@ -39,19 +38,16 @@ def verify_password(plain: str, hashed: str) -> bool:
     try:
         plain_bytes = plain.encode("utf-8")
         if len(plain_bytes) > 72:
-            plain = plain_bytes[:72].decode("utf-8", "ignore")
-        return pwd_context.verify(plain, hashed)
+            plain_bytes = plain_bytes[:72]
+        return bcrypt.checkpw(plain_bytes, hashed.encode("utf-8"))
     except Exception:
         return False
 
 def hash_password(plain: str) -> str:
-    try:
-        plain_bytes = plain.encode("utf-8")
-        if len(plain_bytes) > 72:
-            plain = plain_bytes[:72].decode("utf-8", "ignore")
-    except Exception:
-        plain = plain[:72]
-    return pwd_context.hash(plain)
+    plain_bytes = plain.encode("utf-8")
+    if len(plain_bytes) > 72:
+        plain_bytes = plain_bytes[:72]
+    return bcrypt.hashpw(plain_bytes, bcrypt.gensalt()).decode("utf-8")
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()

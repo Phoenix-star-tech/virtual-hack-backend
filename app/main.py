@@ -12,6 +12,7 @@ app = FastAPI(
     title="Virtual Hackathon 2K26 API",
     description="Backend API for Virtual Hackathon 2K26",
     version="1.0.0",
+    redirect_slashes=False,
 )
 
 app.add_middleware(
