@@ -30,10 +30,14 @@ router = APIRouter()
 
 
 def hash_password(plain: str) -> str:
+    if len(plain) > 72:
+        plain = plain[:72]
     return pwd_context.hash(plain)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    if len(plain) > 72:
+        plain = plain[:72]
     return pwd_context.verify(plain, hashed)
 
 
