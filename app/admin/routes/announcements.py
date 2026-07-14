@@ -14,8 +14,8 @@ async def list_announcements(admin: dict = Depends(get_current_admin)):
     anns = supabase.from_("announcements").select("*").order("created_at", desc=True).execute()
     for a in anns.data or []:
         if a.get("created_by"):
-            au = supabase.from_("admin_users").select("full_name").eq("id", a["created_by"]).single().execute()
-            a["author_name"] = au.data["full_name"] if au.data else ""
+            au = supabase.from_("admin_users").select("full_name").eq("id", a["created_by"]).execute()
+            a["author_name"] = au.data[0]["full_name"] if au.data else ""
     return {"announcements": anns.data or []}
 
 @router.post("/")
@@ -40,8 +40,10 @@ async def create_announcement(data: AnnouncementCreate, admin: dict = Depends(ge
     log_action(admin["sub"], "create_announcement", "announcement", resp.data[0]["id"] if resp.data else None, payload)
 
     if data.send_email:
-        users = supabase.from_("profiles").select("email").execute()
-        emails = [u["email"] for u in users.data if u.get("email")]
+        users = supabase.from_("registrations").select("email").execute()
+        if not users.data:
+            users = supabase.from_("profiles").select("email").execute()
+        emails = list(set(u["email"] for u in users.data if u.get("email")))
         if emails:
             send_email(emails, data.title, data.body)
 

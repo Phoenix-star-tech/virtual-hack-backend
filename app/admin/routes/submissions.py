@@ -34,22 +34,27 @@ async def list_submissions(
     subs = supabase.from_("submissions").select("*").range(start, start + per_page - 1).order("created_at", desc=True).execute()
 
     for s in subs.data or []:
-        task = supabase.from_("tasks").select("title, module_id, answer_type, quiz_options").eq("id", s["task_id"]).single().execute()
-        s["task_title"] = task.data["title"] if task.data else ""
-        s["module_id"] = task.data["module_id"] if task.data else ""
-        s["answer_type"] = task.data["answer_type"] if task.data else "link"
-        s["quiz_options"] = task.data["quiz_options"] if task.data else []
-        if task.data and task.data.get("module_id"):
-            mod = supabase.from_("modules").select("name").eq("id", task.data["module_id"]).single().execute()
-            s["module_name"] = mod.data["name"] if mod.data else ""
+        task_resp = supabase.from_("tasks").select("title, module_id, answer_type, quiz_options").eq("id", s["task_id"]).execute()
+        task = task_resp.data[0] if task_resp.data else None
+        s["task_title"] = task["title"] if task else ""
+        s["module_id"] = task["module_id"] if task else ""
+        s["answer_type"] = task["answer_type"] if task else "link"
+        s["quiz_options"] = task["quiz_options"] if task else []
+        if task and task.get("module_id"):
+            mod_resp = supabase.from_("modules").select("name").eq("id", task["module_id"]).execute()
+            s["module_name"] = mod_resp.data[0]["name"] if mod_resp.data else ""
         else:
             s["module_name"] = ""
-        submitter = supabase.from_("profiles").select("full_name, email").eq("id", s["submitter_id"]).single().execute()
-        s["submitter_name"] = submitter.data["full_name"] if submitter.data else ""
-        s["submitter_email"] = submitter.data["email"] if submitter.data else ""
+        submitter_resp = supabase.from_("registrations").select("full_name, email").eq("id", s["submitter_id"]).execute()
+        if not submitter_resp.data:
+            submitter_resp = supabase.from_("profiles").select("full_name, email").eq("id", s["submitter_id"]).execute()
+        s["submitter_name"] = submitter_resp.data[0]["full_name"] if submitter_resp.data else ""
+        s["submitter_email"] = submitter_resp.data[0]["email"] if submitter_resp.data else ""
         if s.get("team_id"):
-            team = supabase.from_("teams").select("name").eq("id", s["team_id"]).single().execute()
-            s["team_name"] = team.data["name"] if team.data else ""
+            team_resp = supabase.from_("registrations").select("team_name").eq("id", s["team_id"]).execute()
+            if not team_resp.data:
+                team_resp = supabase.from_("teams").select("name").eq("id", s["team_id"]).execute()
+            s["team_name"] = team_resp.data[0].get("team_name") or team_resp.data[0].get("name") or "" if team_resp.data else ""
 
     return {"submissions": subs.data or [], "total": total.count or 0, "page": page, "per_page": per_page}
 
