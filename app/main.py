@@ -24,6 +24,7 @@ app.add_middleware(
         "http://127.0.0.1:5174",
         "https://virtual-hackathon-three.vercel.app",
         "https://virtual-hackathon-hgragr9xf-phoenix-star-techs-projects.vercel.app",
+        "https://virtual-hackathon-2k26.vercel.app",
     ],
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
