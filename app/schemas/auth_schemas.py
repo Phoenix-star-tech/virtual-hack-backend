@@ -57,3 +57,11 @@ class TransactionCheckRequest(BaseModel):
 
 class TransactionCheckResponse(BaseModel):
     exists: bool
+
+
+class EmailCheckResponse(BaseModel):
+    available: bool
+
+
+class TeamNameCheckResponse(BaseModel):
+    available: bool

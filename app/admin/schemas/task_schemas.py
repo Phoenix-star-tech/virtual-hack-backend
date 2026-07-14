@@ -5,6 +5,7 @@ class TaskCreate(BaseModel):
     module_id: str
     title: str
     description: str = ""
+    link: str = ""
     points: int = 0
     attachments: list = []
     deadline: datetime | None = None
@@ -16,6 +17,7 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
+    link: str | None = None
     points: int | None = None
     attachments: list | None = None
     deadline: datetime | None = None
@@ -29,6 +31,7 @@ class TaskResponse(BaseModel):
     module_id: str
     title: str
     description: str
+    link: str = ""
     points: int
     attachments: list
     deadline: str | None = None

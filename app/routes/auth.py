@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from jose import JWTError, jwt
 import bcrypt
 from dotenv import load_dotenv
@@ -329,13 +329,25 @@ async def get_session():
         return {"authenticated": False}
 
 
-@router.post("/check-transaction", response_model=TransactionCheckResponse)
-async def check_transaction(request: TransactionCheckRequest):
+@router.get("/check-email")
+async def check_email(email: str = Query(...)):
     if not supabase_admin:
         raise HTTPException(status_code=503, detail="Supabase is not configured.")
     try:
-        existing = supabase_admin.table("registrations").select("id").eq("transaction_id", request.transaction_id.strip()).execute()
-        return TransactionCheckResponse(exists=len(existing.data) > 0)
+        existing = supabase_admin.table("registrations").select("id").eq("email", email.strip()).eq("type", "solo").execute()
+        return {"available": len(existing.data) == 0}
     except Exception as e:
-        logger.error("Transaction check failed: %s", e)
-        return TransactionCheckResponse(exists=False)
+        logger.error("Email check failed: %s", e)
+        return {"available": False}
+
+
+@router.get("/check-team-name")
+async def check_team_name(team_name: str = Query(...)):
+    if not supabase_admin:
+        raise HTTPException(status_code=503, detail="Supabase is not configured.")
+    try:
+        existing = supabase_admin.table("registrations").select("id").eq("team_name", team_name.strip()).execute()
+        return {"available": len(existing.data) == 0}
+    except Exception as e:
+        logger.error("Team name check failed: %s", e)
+        return {"available": False}
