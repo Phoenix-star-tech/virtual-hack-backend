@@ -32,6 +32,8 @@ async def create_task(data: TaskCreate, admin: dict = Depends(require_role("supe
     if not supabase:
         raise HTTPException(status_code=503, detail="Supabase not configured")
     payload = data.model_dump()
+    if not payload.get("link"):
+        payload.pop("link", None)
     if isinstance(payload.get("attachments"), list):
         payload["attachments"] = payload["attachments"]
     if payload.get("deadline"):
@@ -45,6 +47,8 @@ async def update_task(task_id: str, data: TaskUpdate, admin: dict = Depends(requ
     if not supabase:
         raise HTTPException(status_code=503, detail="Supabase not configured")
     payload = data.model_dump(exclude_none=True)
+    if "link" in payload and not payload["link"]:
+        payload.pop("link")
     if "deadline" in payload and payload["deadline"]:
         payload["deadline"] = payload["deadline"].isoformat()
     payload["updated_at"] = datetime.now(timezone.utc).isoformat()
